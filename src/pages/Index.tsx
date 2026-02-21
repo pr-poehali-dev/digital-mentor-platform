@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import Icon from "@/components/ui/icon";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const HERO_IMG = "https://cdn.poehali.dev/projects/3e44b9c2-fa1c-4999-a344-46973ae38b7d/files/13825dec-9fe4-4632-8312-476f3ead13f8.jpg";
 
@@ -107,11 +108,30 @@ const INITIAL_MESSAGES = [
   { id: 3, from: "mentor", name: "Алексей", text: "Конечно! Покажу вам пошагово. Для начала зайдите в App Store или Google Play — это иконка с цветными квадратиками 🙂", time: "10:35" },
 ];
 
+type RegStep = "form" | "interests" | "done";
+
+const INTEREST_OPTIONS = [
+  { id: "smartphone", label: "Смартфон", icon: "Smartphone" },
+  { id: "bank", label: "Банкинг", icon: "CreditCard" },
+  { id: "gosuslugi", label: "Госуслуги", icon: "FileText" },
+  { id: "video", label: "Видеозвонки", icon: "Video" },
+  { id: "social", label: "Соцсети", icon: "Share2" },
+  { id: "shopping", label: "Покупки онлайн", icon: "ShoppingCart" },
+];
+
 export default function Index() {
   const [activeSection, setActiveSection] = useState("home");
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [regOpen, setRegOpen] = useState(false);
+  const [regStep, setRegStep] = useState<RegStep>("form");
+  const [regData, setRegData] = useState({ name: "", age: "", phone: "", email: "" });
+  const [regInterests, setRegInterests] = useState<string[]>([]);
+  const [isUser, setIsUser] = useState(false);
+  const [callModalOpen, setCallModalOpen] = useState(false);
+  const [callMentor, setCallMentor] = useState("");
 
   const scrollTo = (id: string) => {
     setActiveSection(id);
@@ -165,6 +185,19 @@ export default function Index() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isUser ? (
+              <div className="hidden md:flex items-center gap-2 bg-primary/10 rounded-xl px-3 py-1.5">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {regData.name ? regData.name[0] : "У"}
+                </div>
+                <span className="text-sm font-medium text-foreground">{regData.name || "Мой профиль"}</span>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" className="hidden md:flex gap-1.5" onClick={() => { setRegOpen(true); setRegStep("form"); }}>
+                <Icon name="UserPlus" size={15} />
+                Войти / Регистрация
+              </Button>
+            )}
             <Button size="sm" className="hidden md:flex">Стать наставником</Button>
             <button
               className="md:hidden p-2 rounded-lg hover:bg-secondary"
@@ -333,10 +366,15 @@ export default function Index() {
                     </div>
                   </div>
 
-                  <Button className="w-full mt-4 gap-2" onClick={() => scrollTo("chat")}>
-                    <Icon name="MessageCircle" size={16} />
-                    Написать
-                  </Button>
+                  <div className="flex gap-2 mt-4">
+                    <Button className="flex-1 gap-2" onClick={() => scrollTo("chat")}>
+                      <Icon name="MessageCircle" size={16} />
+                      Написать
+                    </Button>
+                    <Button variant="outline" className="gap-2 px-3" onClick={() => { setCallMentor(mentor.name); setCallModalOpen(true); }}>
+                      <Icon name="Phone" size={16} className="text-green-600" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -486,12 +524,28 @@ export default function Index() {
                   <AvatarImage src={MENTORS[0].avatar} />
                   <AvatarFallback>А</AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-foreground text-sm">Алексей Фомин</p>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                     <p className="text-xs text-muted-foreground">Онлайн</p>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setCallMentor("Алексей Фомин"); setCallModalOpen(true); }}
+                    className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center hover:bg-green-200 transition-colors"
+                    title="Позвонить"
+                  >
+                    <Icon name="Phone" size={16} className="text-green-600" />
+                  </button>
+                  <button
+                    onClick={() => { setCallMentor("Алексей Фомин"); setCallModalOpen(true); }}
+                    className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+                    title="Видеозвонок"
+                  >
+                    <Icon name="Video" size={16} className="text-primary" />
+                  </button>
                 </div>
               </div>
 
@@ -688,6 +742,183 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      {/* REGISTRATION MODAL */}
+      <Dialog open={regOpen} onOpenChange={setRegOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl">
+          {regStep === "form" && (
+            <div>
+              <div className="bg-gradient-to-br from-primary to-blue-400 p-8 text-white">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
+                  <Icon name="UserPlus" size={22} className="text-white" />
+                </div>
+                <DialogTitle className="text-2xl font-black text-white mb-1">Регистрация</DialogTitle>
+                <p className="text-white/80 text-sm">Шаг 1 из 2 — Ваши данные</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">Имя и фамилия</label>
+                  <input
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+                    placeholder="Например: Светлана Орлова"
+                    value={regData.name}
+                    onChange={(e) => setRegData({ ...regData, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">Ваш возраст</label>
+                  <input
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+                    placeholder="Например: 65"
+                    type="number"
+                    value={regData.age}
+                    onChange={(e) => setRegData({ ...regData, age: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">Номер телефона</label>
+                  <input
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+                    placeholder="+7 (999) 123-45-67"
+                    value={regData.phone}
+                    onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-foreground mb-1.5">Электронная почта <span className="text-muted-foreground font-normal">(необязательно)</span></label>
+                  <input
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+                    placeholder="example@mail.ru"
+                    value={regData.email}
+                    onChange={(e) => setRegData({ ...regData, email: e.target.value })}
+                  />
+                </div>
+                <Button
+                  className="w-full gap-2 mt-2"
+                  disabled={!regData.name || !regData.phone}
+                  onClick={() => setRegStep("interests")}
+                >
+                  Далее
+                  <Icon name="ArrowRight" size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {regStep === "interests" && (
+            <div>
+              <div className="bg-gradient-to-br from-primary to-blue-400 p-8 text-white">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
+                  <Icon name="Sparkles" size={22} className="text-white" />
+                </div>
+                <DialogTitle className="text-2xl font-black text-white mb-1">Ваши интересы</DialogTitle>
+                <p className="text-white/80 text-sm">Шаг 2 из 2 — Что хотите изучить?</p>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-muted-foreground mb-4">Выберите темы, которые вас интересуют (можно несколько)</p>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {INTEREST_OPTIONS.map((opt) => {
+                    const selected = regInterests.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setRegInterests((prev) => selected ? prev.filter((x) => x !== opt.id) : [...prev, opt.id])}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${selected ? "border-primary bg-primary/5 text-primary" : "border-border text-foreground hover:border-primary/40"}`}
+                      >
+                        <Icon name={opt.icon} size={18} className={selected ? "text-primary" : "text-muted-foreground"} />
+                        <span className="text-sm font-medium">{opt.label}</span>
+                        {selected && <Icon name="Check" size={14} className="text-primary ml-auto" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => { setRegStep("done"); setIsUser(true); setTimeout(() => setRegOpen(false), 2200); }}
+                >
+                  <Icon name="CheckCircle" size={16} />
+                  Завершить регистрацию
+                </Button>
+                <button className="w-full text-center text-sm text-muted-foreground mt-3 hover:text-foreground transition-colors" onClick={() => setRegStep("form")}>
+                  ← Назад
+                </button>
+              </div>
+            </div>
+          )}
+
+          {regStep === "done" && (
+            <div className="p-10 text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-scale-in">
+                <Icon name="CheckCircle" size={36} className="text-green-500" />
+              </div>
+              <h3 className="text-2xl font-black text-foreground mb-2">Добро пожаловать!</h3>
+              <p className="text-muted-foreground text-sm">Аккаунт создан, {regData.name}! Теперь вы можете найти своего наставника.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* CALL MODAL */}
+      <Dialog open={callModalOpen} onOpenChange={setCallModalOpen}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-white text-center">
+            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="Phone" size={32} className="text-white" />
+            </div>
+            <DialogTitle className="text-xl font-black text-white mb-1">Позвонить наставнику</DialogTitle>
+            <p className="text-white/70 text-sm">{callMentor}</p>
+          </div>
+          <div className="p-6 space-y-3">
+            <p className="text-center text-sm text-muted-foreground mb-4">Выберите удобный способ связи</p>
+            <a
+              href="tel:+79991234567"
+              className="flex items-center gap-4 p-4 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors"
+            >
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon name="Phone" size={18} className="text-green-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Обычный звонок</p>
+                <p className="text-xs text-muted-foreground">+7 (999) 123-45-67</p>
+              </div>
+              <Icon name="ChevronRight" size={16} className="text-muted-foreground ml-auto" />
+            </a>
+            <a
+              href="https://t.me/cifrov_nastavnik"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon name="MessageCircle" size={18} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Telegram</p>
+                <p className="text-xs text-muted-foreground">@cifrov_nastavnik</p>
+              </div>
+              <Icon name="ChevronRight" size={16} className="text-muted-foreground ml-auto" />
+            </a>
+            <a
+              href="https://zoom.us/j/1234567890"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors"
+            >
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon name="Video" size={18} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Видеозвонок (Zoom)</p>
+                <p className="text-xs text-muted-foreground">Нажмите — откроется встреча</p>
+              </div>
+              <Icon name="ChevronRight" size={16} className="text-muted-foreground ml-auto" />
+            </a>
+            <Button variant="outline" className="w-full mt-2" onClick={() => setCallModalOpen(false)}>
+              Закрыть
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
